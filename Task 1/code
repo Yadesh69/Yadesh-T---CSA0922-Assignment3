@@ -1,0 +1,111 @@
+public class Q1 {
+
+    static volatile int sink;
+
+    static String usingPlus(String[] fields) {
+        String result = "";
+
+        for (String field : fields) {
+            result = result + field;
+        }
+
+        return result;
+    }
+
+    static String usingBuilder(String[] fields) {
+        StringBuilder b = new StringBuilder();
+
+        for (String field : fields) {
+            b.append(field);
+        }
+
+        return b.toString();
+    }
+
+    static String usingBuffer(String[] fields) {
+        StringBuffer b = new StringBuffer();
+
+        for (String field : fields) {
+            b.append(field);
+        }
+
+        return b.toString();
+    }
+
+    static long benchmark(int method, String[] fields, int repeats) {
+
+        long start = System.nanoTime();
+
+        for (int i = 0; i < repeats; i++) {
+
+            String s;
+
+            if (method == 0)
+                s = usingPlus(fields);
+            else if (method == 1)
+                s = usingBuilder(fields);
+            else
+                s = usingBuffer(fields);
+
+            sink += s.length();
+        }
+
+        return (System.nanoTime() - start) / repeats;
+    }
+
+    public static void main(String[] args) {
+
+        int[][] workloads = {
+            {6, 1000},
+            {50, 10000},
+            {200, 2000}
+        };
+
+        String[] names = {
+            "Short Ticket",
+            "10000 Tickets x 50 Fields",
+            "2000 Tickets x 200 Fields"
+        };
+
+        for (int w = 0; w < workloads.length; w++) {
+
+            int count = workloads[w][0];
+            int repeats = workloads[w][1];
+
+            String[] fields = new String[count];
+
+            for (int i = 0; i < count; i++) {
+                fields[i] = "FIELD" + i + "|";
+            }
+
+            System.out.println("\n" + names[w]);
+
+            benchmark(0, fields, 100);
+            benchmark(1, fields, 100);
+            benchmark(2, fields, 100);
+
+            for (int m = 0; m < 3; m++) {
+
+                long total = 0;
+
+                for (int r = 0; r < 5; r++) {
+                    total += benchmark(m, fields, repeats);
+                }
+
+                System.out.printf(
+                    "%s average ns/ticket: %.0f%n",
+                    m == 0 ? "String +" :
+                    m == 1 ? "StringBuilder" : "StringBuffer",
+                    total / 5.0
+                );
+            }
+        }
+
+        Runtime rt = Runtime.getRuntime();
+
+        System.out.println(
+            "Approximate used heap bytes: " +
+            (rt.totalMemory() - rt.freeMemory())
+        );
+    }
+}
