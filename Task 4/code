@@ -1,0 +1,92 @@
+import java.util.*;
+
+public class PharmacyInventory {
+
+    static volatile int sink;
+
+    static long lookupTime(
+        Map<String, Integer> map,
+        String[] keys
+    ) {
+
+        long start = System.nanoTime();
+
+        for (int r = 0; r < 100000; r++) {
+            sink += map.get(keys[r % keys.length]);
+        }
+
+        return System.nanoTime() - start;
+    }
+
+    public static void main(String[] args) {
+
+        int[] sizes = {1000, 10000, 50000};
+
+        for (int n : sizes) {
+
+            Map<String, Integer> hash = new HashMap<>();
+            Map<String, Integer> tree = new TreeMap<>();
+            Map<String, Integer> linked = new LinkedHashMap<>();
+
+            String[] keys = new String[n];
+
+            for (int i = 0; i < n; i++) {
+
+                keys[i] = String.format("MED%06d", i);
+
+                hash.put(keys[i], i);
+                tree.put(keys[i], i);
+                linked.put(keys[i], i);
+            }
+
+            System.out.println("\nMedicines: " + n);
+
+            System.out.println(
+                "HashMap 100k lookups ns: " +
+                lookupTime(hash, keys)
+            );
+
+            System.out.println(
+                "TreeMap 100k lookups ns: " +
+                lookupTime(tree, keys)
+            );
+
+            System.out.println(
+                "LinkedHashMap 100k lookups ns: " +
+                lookupTime(linked, keys)
+            );
+
+            long t = System.nanoTime();
+
+            new TreeMap<>(hash).forEach(
+                (k, v) -> sink += v
+            );
+
+            System.out.println(
+                "Sorted report ns: " +
+                (System.nanoTime() - t)
+            );
+
+            t = System.nanoTime();
+
+            linked.forEach(
+                (k, v) -> sink += v
+            );
+
+            System.out.println(
+                "Insertion order report ns: " +
+                (System.nanoTime() - t)
+            );
+
+            System.out.println(
+                "First TreeMap key: " +
+                tree.keySet().iterator().next()
+            );
+
+            System.out.println(
+                "First LinkedHashMap key: " +
+                linked.keySet().iterator().next()
+            );
+        }
+    }
+}
